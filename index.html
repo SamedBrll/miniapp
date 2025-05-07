@@ -1,73 +1,116 @@
+// HTML içeriğini JavaScript ile oluşturma
+const htmlContent = `
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clicker Game</title>
     <style>
-        #score-display {
-            font-size: 2em;
-            margin: 20px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        #puppy {
-            width: 100px;
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .game-container {
+            text-align: center;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
             cursor: pointer;
+            margin: 10px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:disabled {
+            background-color: #ccc;
         }
     </style>
 </head>
 <body>
-    <h1>Clicker Game</h1>
-    <div id="score-display">Score: 0</div>
-    <img id="puppy" src="https://via.placeholder.com/100" alt="Click me!" />
-
+    <div class="game-container">
+        <h1>Clicker Game</h1>
+        <p>Skor: <span id="score">0</span></p>
+        <button id="clickButton">Tıkla!</button>
+        <button id="saveButton">Skoru Kaydet</button>
+    </div>
     <script>
-        const userId = 'user123';  // Her kullanıcıya özel bir ID
-        const username = 'Samet';  // Kullanıcı adı (örnek)
         let score = 0;
 
-        const scoreDisplay = document.getElementById('score-display');
-        const puppy = document.getElementById('puppy');
+        // Skoru güncelleme fonksiyonu
+        function updateScore() {
+            score += 1;
+            document.getElementById('score').innerText = score;
+        }
 
-        // Skor güncelleme
-        async function updateScoreInDB(userId, firstName, score) {
-            try {
-                const response = await fetch('http://localhost:3000/update-score', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId, firstName, score }),
-                });
+        // Skoru kaydetme fonksiyonu
+        function saveScore() {
+            const userId = 'unique-user-id'; // Telegram kullanıcı ID'sini buraya ekleyin
+            const scoreData = { userId, score };
+
+            fetch('http://localhost:3000/update-score', { // Backend API URL'sini buraya yazın
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(scoreData)
+            })
+            .then(response => {
                 if (response.ok) {
-                    console.log('Score updated successfully!');
+                    alert('Skor başarıyla kaydedildi!');
                 } else {
-                    console.error('Failed to update score');
+                    alert('Skor kaydedilemedi!');
                 }
-            } catch (error) {
-                console.error('Error:', error);
-            }
+            })
+            .catch(error => {
+                console.error('Hata:', error);
+                alert('Bir hata oluştu!');
+            });
         }
 
-        // Skoru getirme
-        async function getScoreFromDB(userId) {
-            try {
-                const response = await fetch(`http://localhost:3000/get-score/${userId}`);
-                const data = await response.json();
-                score = data.score || 0;
-                scoreDisplay.textContent = `Score: ${score}`;
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        }
-
-        // Skor tıklama ile güncelleniyor
-        puppy.addEventListener('click', () => {
-            score++;
-            scoreDisplay.textContent = `Score: ${score}`;
-            // Kullanıcı bilgileri ve skoru backend'e gönder
-            updateScoreInDB(userId, username, score);
-        });
-
-        // Sayfa yüklendiğinde skoru al
-        getScoreFromDB(userId);
+        // Butonları bağlama
+        document.getElementById('clickButton').addEventListener('click', updateScore);
+        document.getElementById('saveButton').addEventListener('click', saveScore);
     </script>
 </body>
 </html>
+`;
+
+// HTML içeriğini sunucuya gönderme
+const http = require('http');
+
+const server = http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end(htmlContent);
+});
+
+server.listen(3000, () => {
+    console.log('Server http://localhost:3000 üzerinde çalışıyor');
+});
