@@ -1,91 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Puppy Clicker Game</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: url('https://images.unsplash.com/photo-1601758123927-196a013475c1?auto=format&fit=crop&w=1280&q=80') no-repeat center center fixed;
-      background-size: cover;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      color: white;
-    }
-    h1 {
-      margin-top: 30px;
-      font-size: 3em;
-    }
-    #puppy {
-      width: 200px;
-      cursor: pointer;
-      transition: transform 0.1s;
-    }
-    #puppy:active {
-      transform: scale(0.95);
-    }
-    #score {
-      font-size: 2em;
-      margin: 20px 0;
-    }
-    #start-btn {
-      background-color: #ffcc00;
-      border: none;
-      padding: 15px 30px;
-      font-size: 1.2em;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-    #countdown {
-      font-size: 2em;
-      margin-top: 10px;
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Puppy Clicker Game</title>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: url('https://images.unsplash.com/photo-1601758123927-196a013475c1?auto=format&fit=crop&w=1280&q=80') no-repeat center center fixed;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            color: white;
+        }
+        h1 {
+            margin-top: 30px;
+            font-size: 3em;
+        }
+        #puppy {
+            width: 200px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        #puppy:active {
+            transform: scale(0.95);
+        }
+        #score, #username {
+            font-size: 2em;
+            margin: 20px 0;
+        }
+        #start-btn {
+            background-color: #ffcc00;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        #countdown {
+            font-size: 2em;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
-  <h1>Puppy Clicker</h1>
-  <img id="puppy" src="https://cdn-icons-png.flaticon.com/512/616/616408.png" alt="puppy" style="display: none;">
-  <div id="score">Score: 0</div>
-  <button id="start-btn">Oyunu Başlat</button>
-  <div id="countdown"></div>
+    <h1>Puppy Clicker</h1>
+    <div id="username"></div>
+    <div id="score">Score: 0</div>
+    <button id="start-btn">Oyunu Başlat</button>
+    <div id="countdown"></div>
+    <img id="puppy" src="https://cdn-icons-png.flaticon.com/512/616/616408.png" alt="puppy" style="display: none;">
 
-  <script>
-    const puppy = document.getElementById('puppy');
-    const scoreDisplay = document.getElementById('score');
-    const startBtn = document.getElementById('start-btn');
-    const countdown = document.getElementById('countdown');
+    <script>
+        // Firebase yapılandırması
+        const firebaseConfig = {
+            apiKey: "AIzaSyDGGVTf66nm8E1ZHyszJfw_1CTR6u8FkxI",
+            authDomain: "yoklama-e8c94.firebaseapp.com",
+            databaseURL: "https://yoklama-e8c94-default-rtdb.firebaseio.com",
+            projectId: "yoklama-e8c94",
+            storageBucket: "yoklama-e8c94.appspot.com",
+            messagingSenderId: "686449231413",
+            appId: "1:686449231413:web:6d03045857a9dca66c937c"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-    let score = 0;
-    let timeLeft = 10;
-    let intervalId;
+        // Telegram WebApp bilgileri
+        const tg = window.Telegram.WebApp;
+        const userId = tg.initDataUnsafe.user.id;
+        let username = tg.initDataUnsafe.user.first_name || "Bilinmiyor";
+        let score = 0;
+        let timeLeft = 10;
+        let intervalId;
 
-    puppy.addEventListener('click', () => {
-      score++;
-      scoreDisplay.textContent = `Score: ${score}`;
-    });
+        const puppy = document.getElementById('puppy');
+        const scoreDisplay = document.getElementById('score');
+        const usernameDisplay = document.getElementById('username');
+        const startBtn = document.getElementById('start-btn');
+        const countdown = document.getElementById('countdown');
+        
+        // Kullanıcı bilgilerini ekrana yazdır
+        usernameDisplay.textContent = "Hoşgeldin, " + username;
 
-    startBtn.addEventListener('click', () => {
-      score = 0;
-      timeLeft = 10;
-      scoreDisplay.textContent = `Score: ${score}`;
-      countdown.textContent = `Kalan Süre: ${timeLeft}`;
-      puppy.style.display = 'inline-block';
-      startBtn.style.display = 'none';
+        // Firebase'den skor çek
+        firebase.database().ref("users/" + userId).once("value").then(snapshot => {
+            score = snapshot.val()?.score || 0;
+            scoreDisplay.textContent = `Score: ${score}`;
+        });
 
-      intervalId = setInterval(() => {
-        timeLeft--;
-        countdown.textContent = `Kalan Süre: ${timeLeft}`;
-        if (timeLeft === 0) {
-          clearInterval(intervalId);
-          countdown.textContent = `Oyun Bitti! Toplam Skor: ${score}`;
-          startBtn.textContent = 'Tekrar Oyna';
-          startBtn.style.display = 'inline-block';
-          puppy.style.display = 'none';
-        }
-      }, 1000);
-    });
-  </script>
+        // Puppy tıklama işlemi
+        puppy.addEventListener('click', () => {
+            score++;
+            scoreDisplay.textContent = `Score: ${score}`;
+            firebase.database().ref("users/" + userId).set({ score });
+        });
+
+        // Oyun başlat
+        startBtn.addEventListener('click', () => {
+            score = 0;
+            timeLeft = 10;
+            scoreDisplay.textContent = `Score: ${score}`;
+            countdown.textContent = `Kalan Süre: ${timeLeft}`;
+            puppy.style.display = 'inline-block';
+            startBtn.style.display = 'none';
+
+            intervalId = setInterval(() => {
+                timeLeft--;
+                countdown.textContent = `Kalan Süre: ${timeLeft}`;
+                if (timeLeft === 0) {
+                    clearInterval(intervalId);
+                    countdown.textContent = `Oyun Bitti! Toplam Skor: ${score}`;
+                    startBtn.textContent = 'Tekrar Oyna';
+                    startBtn.style.display = 'inline-block';
+                    puppy.style.display = 'none';
+                    // Oyun bittiğinde Firebase'e kaydet
+                    firebase.database().ref("users/" + userId).set({ score });
+                }
+            }, 1000);
+        });
+    </script>
 </body>
 </html>
